@@ -227,7 +227,7 @@ concatName.apply(rabbit, ['Bye ']); // => 'Bye White Rabbit'
 
 在上例中我们利用`call`与`apply`函数在concatName函数执行时中的`this`绑定.
 
-### 6. bound函数
+### 5. bound函数
 运用`.bind()`函数创建的函数称为bound函数.
 
 ~~~javascript
@@ -246,7 +246,7 @@ double(10); // => 20
 
 `bind`与`apply`, `call`的区别在于后者会直接对函数进行调用而前者会返回一个新函数.
 
-#### 6.1 bound函数中的`this`
+#### 5.1 bound函数中的`this`
 > bound函数中的`this`指向`.bind()`函数中第一个参数
 
 ~~~javascript
@@ -283,4 +283,86 @@ one.apply(2); // => 1
 one.bind(2)(); // => 1  
 ~~~
 
-### 7. 箭头函数
+### 6. 箭头函数
+ES6中的箭头函数是语法上更简洁的函数表达式, 并且尖头函数不会与其自身的`this`, `arguments`, `super`或`new.target`绑定. 箭头函数永远是一个匿名函数.
+
+~~~javascript
+var hello = (name) => `hello ${name}`
+console.log(hello('world')) //hello world
+~~~
+
+箭头函数是匿名的, 所以其`name`属性为''并且其并不提供`arguments`对象而是提供[`rest`](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Functions/rest_parameters)对象.
+
+~~~javascript
+var sumArguments = (...args) => {
+  console.log(typeof arguments) //undefined
+  return args.reduce((res, i) => res + i)
+}
+console.log(sumArguments(1,2,3)) //6
+~~~
+
+#### 6.1 箭头函数中的`this`
+> 箭头函数中的`this`指向定义箭头函数的scope
+
+箭头函数不用创建自己的执行环境, 其内部的`this`指向定义箭头函数外部的函数。
+
+~~~javascript
+class Point {
+  constructor(x, y) {
+    this.x = x
+    this.y = y
+  }
+  log() {
+    console.log(this === myPoint)
+    setTimeout(() => {
+      console.log(this === myPoint)
+      console.log(this.x + ':' + this.y)
+    }, 1000)
+  }
+}
+
+var myPoint = new Point(95, 165)
+myPoint.log()
+~~~
+
+如果你把上面的例子跟例2.2中的例子对比下你就会发现本例中的`this`指向了对象本身, 而在例2.2中函数执行的时候`this`指向global object.
+
+箭头函数中的`this`只能绑定一次, 一经绑定我们无法通过`apply`, `call`, `bind`来改变.
+
+~~~javascript
+var numbers = [1, 2];
+(function() {
+  var get = () => {
+    return this
+  }
+  console.log(this === numbers) //true
+  console.log(get()) //[1, 2]
+  console.log(get.call([0])) //[1, 2]
+  console.log(get.apply([0])) //[1, 2]
+  console.log(get.bind([0])()) //[1, 2]
+}).call(numbers)
+~~~
+
+#### 6.2 深坑: 利用箭头函数创建对象方法
+由于箭头函数中的执行环境是静态的(只能绑定一次), 所以如果在用原型链的方式创建对象方法的时候最好避免用箭头函数.
+
+~~~javascript
+function Period (hours, minutes) {  
+  this.hours = hours;
+  this.minutes = minutes;
+}
+Period.prototype.format = () => {  
+  console.log(this === global); // => true
+  return this.hours + ' hours and ' + this.minutes + ' minutes';
+};
+var walkPeriod = new Period(2, 30);  
+console.log(walkPeriod.format()); // => 'undefined hours and undefined minutes'  
+~~~
+
+上例中箭头函数在创建时, 其内部的`this`指向创建箭头函数的外部环境global(window), 在执行`walkPeriod.format()`的时候`this`也依旧指向global. 我们需要尽量避免这种声明方式(对比例2.1). 
+
+### 7. 结论
+
+遇到需要分析`this`的情况时只需要考虑一件事: `this`所在的函数是通过何种方式执行的？
+
+如果你分析的是箭头函数, 你只需要了解: `this`指向定义箭头函数的外部环境.
